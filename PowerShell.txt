@@ -1,0 +1,112 @@
+バージョン確認
+    PS>$PSVersionTable
+ファイルを作成する
+    PS>"" > item.txt
+    PS>New-Item -Path item.txt
+    10個のファイルを作る
+    PS>1..10 | ForEach-Object {New-Item -Path item$_.txt}
+ファイルのリネーム
+    PS>Rename-Item -Path item.txt -NewName file.txt
+    10個ファイルをリネームするitem*.txt -> file*.txt
+    PS>Get-ChildItem item*.txt -File | ForEach-Object{Rename-Item -Path $_ -NewName $_.Name.Replace("item","file")}
+ファイルの一覧表示
+    PS>Get-ChildItem
+    itemから始まるファイル一覧だけを表示する
+    PS>Get-ChildItem item*.txt -File
+ファイル一覧をCSVファイルに書き出す
+    PS>Get-ChildItem | Select-Object Name,DirectoryName,Length | Export-Csv -Path output.csv
+ファイルのプロパティを表示させる
+    PS>Get-ChildItem | Select-Object *
+    最初の１ファイルのプロパティを表示する
+    PS>Get-ChildItem | Select-Object * -First 1
+    最後の１ファイルのプロパティを表示する
+    PS>Get-ChildItem | Select-Object * -Last 1
+ファイルの内容を確認する
+    PS>Get-Content .\outout.csv
+Get-ChildItemのメンバーを表示させる
+    PS>Get-ChildItem | Get-Member
+CSVファイルを集計する
+    PS>Import-Csv output.csv | Measure-Object -Sum -Property Length
+サイトのステータスコードを取得(ステータスコードが200でなければStatusCheck.logファイルを作る)
+    PS>(Invoke-WebRequest -Uri https://google.com).StatusCode
+    ステータスコードが200でなければlogファイルを作る
+    $statusCode = (Invoke-WebRequest -Uri https://googles.com).StatusCode
+    if($statusCode -ne 200){
+        #ファイルが存在するかどうか確認する
+        if(-not(Test-Path ./StatusCheck.log)){
+            #StatusCheck.logファイルを作る
+            New-Item -Path ./StatusCheck.log
+        }
+    }    
+１分ごとに特定のサイトにアクセスしステータスコードが200でなければStatusCheck.logファイルに各種情報をJSON形式で書き込んでいく
+    while($true){
+        #ステータスコードを取得する
+        $url = "https://googles.com"
+
+        $statusCode = try{
+            (Invoke-WebRequest -Uri $url).StatusCode
+        }
+        catch{
+            $Error[0].Exception.GetBaseException().Response.StatusCode.Value__
+        }
+        #$validStatausCode = 200
+        $validStatausCode = 404
+        if($statusCode -ne $validStatausCode){
+            #ファイルが存在するかどうか確認する
+            if(-not(Test-Path ./StatusCheck.log)){
+                #StatusCheck.logファイルを作る
+                New-Item -Path ./StatusCheck.log
+            }
+            #JSON形式で保存する。ます連想配列に保存する
+            $json = [ordered]@{
+                Date = (Get-Date).ToString("F")
+                Url = $url
+                StatusCode = $statusCode
+            } | ConvertTo-Json -Compress
+            #1分ごとに繰り返す
+            $json | Out-File -LiteralPath ./StatusCheck.log -Append
+        }  
+        Start-Sleep -Seconds 60
+    }
+頻出する自動変数
+    $$  前のコマンドラインの最後のトークン
+    $?  最後に実行したコマンドの結果
+    $^  前のコマンドラインの最初のトークン
+    $args   スクリプトや関数、スクリプトブロックの引数
+    $Error  前のコマンドで発生したエラーの配列  
+    $HOME   ユーザーのホーム
+    $input  スクリプト、スクリプトブロック、関数の引数、パイプラインから流れてくるオブジェクト
+    $MyInvocation   スクリプトファイル自身の情報
+    $PID    現在のプロセスID
+    $PROFILE    PowerShell起動時に自動読込されるプロファイルへのパス
+    $PSBoundParameters  関数、スクリプトブロックのパラメータの入力状態
+    $PSCulture  現在のカルチャ ja-JPと返される
+    $PSEdition  Windows PowerShellはDesktopとかえす
+    $PSHOME pwshが存在するパス
+    $PSScriptRoot   現在実行しているスクリプトファイルのルートパス
+    $PSUICulture    現在のUIカルチャ
+    $PSVersionTable バージョン
+    $PWD    現在のパス
+    $StackTrace 直前のコマンドで発生したエラーのスタックレース
+演算子
+    -eq =
+    -ne !=
+    -gt >   比較対象 > 基準
+    -ge >   比較対象 >= 基準
+    -lt <   比較対象 < 基準
+    -le >   比較対象 <= 基準
+    #マッチング演算子
+    -like   ワイルドカードパターンで文字列が一致
+    -nolike ワイルドカードパターンで文字列が一致しない
+    -match  正規表現で文字列が一致する。一致した結果が$matches変数にはいる
+    -nomatch  正規表現で文字列が一致しない。一致した結果が$matches変数にはいる
+    #配列演算子
+    -contains   左辺の配列に右辺で指定した値が含まれている「いる」とTrueを返す    
+    -nocontains   左辺の配列に右辺で指定した値が含まれている「いないと」とTrueを返す    
+    -in   左辺に指定した値が右辺の配列にふくまれて「いる」とTrueを返す    
+    -noin   左辺に指定した値が右辺の配列にふくまれて「いない」とTrueを返す    
+テキストファイルの比較
+    diff (cat text1.txt) (cat text2.txt)
+    
+
+
